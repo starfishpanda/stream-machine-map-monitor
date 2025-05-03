@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package machine_map;
+package proto;
+
 option go_package = "./proto";
 
 message Machine {
