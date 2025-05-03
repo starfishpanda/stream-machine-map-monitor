@@ -1,0 +1,15 @@
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+vendor/
+.env
+
+# OS
+.DS_Store
+
+# React
+frontend/node_modules/
+frontend/build/
