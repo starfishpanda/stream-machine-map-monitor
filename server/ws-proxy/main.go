@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	pb "stream-machine-map-monitor/proto"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
@@ -37,16 +40,32 @@ func NewProxyServer() (*ProxyServer, error){
 
 // Handle WebSocket machine connections
 func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
+
+
 	// Initialize connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade connection: %v", err)
 		return
 	}
-	defer conn.Close()
+	var closeOnce sync.Once
+	closeConn := func() {
+		closeOnce.Do(func(){
+			conn.Close()
+		})
+	}
+	defer closeConn()
+
+	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	go func() {
+		<-sigCtx.Done()
+		closeConn() // This will trigger the read error and exit your loop
+	}()
 
 	// Create gRPC stream
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(sigCtx)
 	defer cancel()
 
 	stream, err := s.grpcClient.MachineStream(ctx, &pb.MachineStreamRequest{})
@@ -81,7 +100,49 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 }
 }()
 
+// Handle incoming WebSocket messages (disconnects or pause/unpause requests)
+for {
+	_, message, err := conn.ReadMessage()
+	if err != nil {
+		log.Printf("WebSocket read error: %v", err)
+		break
+	}
 
+	var request struct {
+		Type string `json:"type"`
+		ID   uint32 `json:"id"`
+	}
+
+	if err := json.Unmarshal(message, &request); err != nil {
+		log.Printf("Failed to unmarshal request: %v", err)
+		continue
+	}
+
+	var response *pb.Machine
+	switch request.Type {
+	case "pause":
+		response, err = s.grpcClient.Pause(ctx, &pb.Machine{Id: request.ID})
+	case "unpause":
+		response, err = s.grpcClient.UnPause(ctx, &pb.Machine{Id: request.ID})
+	default:
+		log.Printf("Unknown request type: %s", request.Type)
+		continue
+	}
+
+	if err != nil {
+		log.Printf("Failed to pause/unpause machine: %v", err)
+		continue
+	}
+
+	// Send confirmation back to client
+	responseJSON, _ := json.Marshal(response)
+	if err := conn.WriteMessage(websocket.TextMessage, responseJSON); err != nil {
+		log.Printf("failed to write response: %v", err)
+		cancel()
+		break
+	}
+}
+log.Println("Client disconnected, cleaning up")
 }
 func main() {
 	proxy, err := NewProxyServer()
