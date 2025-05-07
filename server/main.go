@@ -57,14 +57,14 @@ func (mm *MachineManager) createMachine() *Machine {
 	machine := &Machine{
 		ID: mm.nextID,
 		Location: &pb.GPS{
-			Lat: 47.695185 + (0.1 * (float64(mm.nextID%5) - 2)), // Start machine around Sammamish Valley, and nudge based on manipulation of ID
-			Lon: -122.145161 + (0.1 * (float64(mm.nextID%5) - 2)),
+			Lat: 47.695185 + (0.001 * (float64(mm.nextID%5) - 2)), // Start machine around Sammamish Valley, and nudge based on manipulation of ID
+			Lon: -122.145161 + (0.001 * (float64(mm.nextID%5) - 2)),
 			Alt: float32(0 + mm.nextID%50), // Different starting altitudes from sea level
 		},
 		IsPaused: false,
 		FuelLevel: 100.0, // Initially 100% FuelLevel
 		brownian: &BrownianMotion{
-			stepSizeLatLon: 0.00001,
+			stepSizeLatLon: 0.01,
 			stepSizeAlt: 1.0,
 			fuelDrainRate: 0.1,
 		},

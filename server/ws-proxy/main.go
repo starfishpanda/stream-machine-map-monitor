@@ -8,7 +8,8 @@ import (
 	"os"
 	"os/signal"
 	pb "stream-machine-map-monitor/proto"
-	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc"
@@ -25,6 +26,7 @@ var upgrader = websocket.Upgrader{
 type ProxyServer struct {
 	// Use client stub for "local" function calls
 	grpcClient pb.MachineMapClient
+	conn *grpc.ClientConn
 }
 
 func NewProxyServer() (*ProxyServer, error){
@@ -38,34 +40,27 @@ func NewProxyServer() (*ProxyServer, error){
 	
 }
 
+// Close gRPC Client connection
+func (s *ProxyServer) Close() {
+	if s.conn != nil {
+		s.conn.Close()
+		log.Println("gRPC connection closed")
+	}
+}
+
 // Handle WebSocket machine connections
 func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
-
-
 	// Initialize connection
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Failed to upgrade connection: %v", err)
 		return
 	}
-	var closeOnce sync.Once
-	closeConn := func() {
-		closeOnce.Do(func(){
-			conn.Close()
-		})
-	}
-	defer closeConn()
+	defer conn.Close()
 
-	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-
-	go func() {
-		<-sigCtx.Done()
-		closeConn() // This will trigger the read error and exit your loop
-	}()
 
 	// Create gRPC stream
-	ctx, cancel := context.WithCancel(sigCtx)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	stream, err := s.grpcClient.MachineStream(ctx, &pb.MachineStreamRequest{})
@@ -85,18 +80,18 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 			}
 
 
-	// Convert to JSON and send to WebSocket
-	machineJSON, err := json.Marshal(machine)
-	if err != nil {
-		log.Printf("Failed to marshal machine: %v", err)
-		continue
-	}
+		// Convert to JSON and send to WebSocket
+		machineJSON, err := json.Marshal(machine)
+		if err != nil {
+			log.Printf("Failed to marshal machine: %v", err)
+			continue
+		}
 
-	if err := conn.WriteMessage(websocket.TextMessage, machineJSON); err != nil {
-		log.Printf("Failed to write message: %v", err)
-		cancel()
-		return
-	}
+		if err := conn.WriteMessage(websocket.TextMessage, machineJSON); err != nil {
+			log.Printf("Failed to write message: %v", err)
+			cancel()
+			return
+		}
 }
 }()
 
@@ -151,7 +146,48 @@ func main() {
 	}
 
 	http.HandleFunc("/machine", proxy.handleMachine)
+
+	// CORS
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Write([]byte("WebSocket proxy server running"))
+	})
+
+	// Create server instance
+	server := &http.Server{
+		Addr: ":3001",
+		Handler: nil,
+	}
+
+	// Create channel to listen for SIGTERM
+	stopChan := make(chan os.Signal, 1)
+	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
 	
-	log.Println("WebSocket proxy server listening on port :3001")
-	log.Fatal(http.ListenAndServe(":3001", nil))
+	// Run server in goroutine
+	go func() {
+		log.Println("WebSocket proxy server listening on port :3001")
+		if err:= server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Error starting server: %v", err)
+		}
+
+	}()
+	// Listening on channel for interrupt signal
+	<-stopChan
+	log.Println("Shutting down server...")
+
+	// Create deadline for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server forced to shutdown: %v", err)
+	}
+
+	log.Println("Server gracefully stopped")
 }
