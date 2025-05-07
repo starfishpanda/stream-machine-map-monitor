@@ -17,7 +17,7 @@ import (
 // MachineManager handles all machines through goroutines
 type MachineManager struct {
 	pb.UnimplementedMachineMapServer
-	machines map[uint32]*Machine // map of machines id to pointers to individual machines
+	machines map[uint32]*Machine // map of machines id to machine pointers
 	mu sync.RWMutex // thread-locking map of machines
 	nextID uint32
 	stopChans map[uint32]chan struct{} // signal goroutines to stop

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api'
+const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 import './App.css'
 
 interface GPS {
@@ -22,7 +23,7 @@ const mapContainerStyle = {
 
 const center = {
   lat: 47.695185, // Sammamish Valley
-  lon: -122.145161
+  lng: -122.145161 // Maps API types uses LatLng
 };
 
 function App() {
@@ -63,17 +64,35 @@ function App() {
     }
   }, []);
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="App">
+      <LoadScript googleMapsApiKey={mapsApiKey}>
+        <GoogleMap
+          mapContainerStyle={mapContainerStyle}
+          center={center}
+          zoom={13}
+          >
+            {/* Render machine markers on map */}
+            {Array.from(machines.values()).map((machine)=>(
+              <Marker
+                key={machine.id}
+                position={{
+                  lat: machine.location.lat,
+                  lng: machine.location.lon
+                }}
+                icon={{
+                  path: window.google.maps.SymbolPath.CIRCLE,
+                  scale: 8,
+                  fillColor: machine.isPaused ? 'red' : 'green',
+                  fillOpacity: 0.8,
+                  strokeWeight: 2,
+                  strokeColor: 'white'
+                }}
+                />
+            ))}
+
+        </GoogleMap>
+      </LoadScript>
+    </div>
   )
 }
 

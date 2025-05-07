@@ -169,7 +169,7 @@ func main() {
 	stopChan := make(chan os.Signal, 1)
 	signal.Notify(stopChan, os.Interrupt, syscall.SIGTERM)
 	
-	// Run server in goroutine
+	// Run server in goroutine so main thread can listen for SIGINT or SIGTERM
 	go func() {
 		log.Println("WebSocket proxy server listening on port :3001")
 		if err:= server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -182,7 +182,7 @@ func main() {
 	log.Println("Shutting down server...")
 
 	// Create deadline for shutdown
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
