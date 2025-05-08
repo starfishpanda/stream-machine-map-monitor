@@ -40,7 +40,7 @@ func NewProxyServer() (*ProxyServer, error){
 	
 }
 
-// Close gRPC Client connection
+// Method for proxy server to close gRPC Client connection 
 func (s *ProxyServer) Close() {
 	if s.conn != nil {
 		s.conn.Close()
@@ -48,7 +48,7 @@ func (s *ProxyServer) Close() {
 	}
 }
 
-// Handle WebSocket machine connections
+// Handle incoming Websocket connection requests from browser client
 func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 	// Initialize connection
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -69,7 +69,7 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	// Forward gRPC stream to WebSocket
+	// Goroutine to forward gRPC stream to WebSocket
 	go func() {
 		for {
 			machine, err := stream.Recv()
@@ -95,7 +95,7 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 }
 }()
 
-// Handle incoming WebSocket messages (disconnects or pause/unpause requests)
+// Handle incoming WebSocket messages (disconnects, or pause and unpause requests)
 for {
 	_, message, err := conn.ReadMessage()
 	if err != nil {
@@ -177,11 +177,11 @@ func main() {
 		}
 
 	}()
-	// Listening on channel for interrupt signal
+	// Listening on channel for SIGINT or SIGTERM
 	<-stopChan
 	log.Println("Shutting down server...")
 
-	// Create deadline for shutdown
+	// Create timeout for shutdown so connections can gracefully close
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"math/rand/v2"
 	"net"
@@ -36,7 +37,7 @@ func NewMachineManager() *MachineManager {
 // Machine represents a robot and its state
 type Machine struct {
 	ID uint32
-	Location *pb.GPS
+	Location *pb.GPS 
 	IsPaused bool
 	mutex sync.RWMutex
 	FuelLevel float32
@@ -57,14 +58,14 @@ func (mm *MachineManager) createMachine() *Machine {
 	machine := &Machine{
 		ID: mm.nextID,
 		Location: &pb.GPS{
-			Lat: 47.695185 + (0.001 * (float64(mm.nextID%5) - 2)), // Start machine around Sammamish Valley, and nudge based on manipulation of ID
-			Lon: -122.145161 + (0.001 * (float64(mm.nextID%5) - 2)),
+			Lat: 47.695185 + (0.0001 * (float64(mm.nextID%5) - 2)), // Start machine around Sammamish Valley, and nudge based on manipulation of ID
+			Lon: -122.145161 + (0.0001 * (float64(mm.nextID%5) - 2)),
 			Alt: float32(0 + mm.nextID%50), // Different starting altitudes from sea level
 		},
-		IsPaused: false,
+		IsPaused: true,
 		FuelLevel: 100.0, // Initially 100% FuelLevel
 		brownian: &BrownianMotion{
-			stepSizeLatLon: 0.01,
+			stepSizeLatLon: 0.0001,
 			stepSizeAlt: 1.0,
 			fuelDrainRate: 0.1,
 		},
@@ -125,6 +126,39 @@ func (mm *MachineManager) startMachineMovement(machine *Machine) {
 	}()
 }
 
+// gRPC method to pause machine
+func (mm *MachineManager) Pause(ctx context.Context, req *pb.Machine) (*pb.Machine, error) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	machine, exists := mm.machines[req.Id]
+	if !exists {
+		return nil, nil
+	}
+
+	machine.mutex.Lock()
+	machine.IsPaused = true
+	machine.mutex.Unlock()
+
+	return mm.machineToProto(machine), nil
+}
+
+// gRPC method to unpause machine
+func (mm *MachineManager) UnPause(ctx context.Context, req *pb.Machine) (*pb.Machine, error) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	machine, exists := mm.machines[req.Id]
+	if !exists {
+		return nil, nil
+	}
+	machine.mutex.Lock()
+	machine.IsPaused = false
+	machine.mutex.Unlock()
+
+	return mm.machineToProto(machine), nil
+}
+
 // gRPC method implementation (same as from .proto). Instantiate machine and stream it as protobuf
 func (mm *MachineManager) MachineStream(req *pb.MachineStreamRequest, stream pb.MachineMap_MachineStreamServer) error {
 	machine := mm.createMachine()
@@ -135,13 +169,28 @@ func (mm *MachineManager) MachineStream(req *pb.MachineStreamRequest, stream pb.
 	// Stream updates until client (WebSocket) disconnects
 	for {
 		select {
+		case <-stream.Context().Done():
+			mm.removeMachine(machine.ID)
+			return nil
 		case <-time.After(mm.updateRate):
 			// Send current machine state as protobuf
 			if err := stream.Send(mm.machineToProto(machine)); err != nil {
+				mm.removeMachine(machine.ID)
 				return err
 			}
 		}
 	}
+}
+
+func (mm *MachineManager) removeMachine(id uint32) {
+	mm.mu.Lock()
+	defer mm.mu.Unlock()
+
+	if stopChan, exists := mm.stopChans[id]; exists {
+		close(stopChan)
+		delete(mm.stopChans, id)
+	}
+	delete(mm.machines, id)
 }
 
 func main() {
