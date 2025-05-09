@@ -258,3 +258,9 @@ If you encounter any issues:
    - Geo-fenced and fuel-related notifications, job completion status and estimated completion time
 5. **Route Planning and Visualization**
    - Sketch out a route on the map, which the vehicle will follow
+6. **Automated Testing**
+   - <ins>Component Testing:</ins> Test scaffolds for React components verify proper rendering of the map, dashboard, and machine controls, ensuring UI elements respond correctly to user interactions.
+   - <ins>State Management:</ins> Tests validate machine state transitions (adding, pausing, resuming) and verify that vehicle location and fuel updates are properly reflected throughout the application.
+   - <ins>WebSocket Communication:</ins> Testing outlines for bidirectional WebSocket communication ensure reliable data flow between frontend and backend, with proper handling of connection lifecycle events.
+   - <ins>gRPC Server Functionality:</ins> Backend tests cover machine creation, Brownian motion simulation, fuel consumption, and proper cleanup of resources when machines disconnect.
+   - <ins>Docker Integration:</ins> Testing plan includes verification of container networking, environment variable configuration, and proper service communication in the dockerized environment.
