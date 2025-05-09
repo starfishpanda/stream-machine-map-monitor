@@ -1,6 +1,228 @@
+/* App.css */
 .App {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
+  font-family: Arial, sans-serif;
 }
 
+.map-container {
+  width: 100%;
+  border-bottom: 1px solid #ccc;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard {
+  padding: 20px;
+  background-color: #f9f9f9;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.add-machine-btn {
+  background-color: #fff;
+  color: #f90;
+  border: 2px solid #f90;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.add-machine-btn:hover {
+  background-color: #fff9e6;
+}
+
+.machine-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: flex-start;
+}
+
+.no-machines-message {
+  padding: 20px;
+  text-align: center;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  color: #666;
+  font-style: italic;
+  width: 100%;
+}
+
+/* Updated for card layout */
+.machine-item-row {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e0e0e0;
+  width: calc(33.333% - 20px);
+  min-width: 250px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.machine-item-row:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.machine-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.machine-id {
+  padding: 10px 12px;
+  background-color: #e6f2ff;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #0066cc;
+  text-align: center;
+  font-size: 16px;
+}
+
+.machine-location {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+
+.machine-location span {
+  white-space: nowrap;
+}
+
+.fuel-level {
+  padding: 10px 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  color: #666;
+  text-align: center;
+  font-weight: bold;
+}
+
+.machine-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.pause-btn, .unpause-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.pause-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.unpause-btn {
+  background-color: #FF6B6B;
+  color: white;
+}
+
+.remove-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background-color: white;
+  border: 1px solid #ff6b6b;
+  color: #ff6b6b;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background-color: #ff6b6b;
+  color: white;
+}
+
+.info-window {
+  padding: 10px;
+  min-width: 200px;
+}
+
+.info-window h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.info-window p {
+  margin: 5px 0;
+  color: #666;
+}
+
+.info-window button {
+  margin-top: 10px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.info-window button.play-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.info-window button.pause-btn {
+  background-color: #FF6B6B;
+  color: white;
+}
+
+.button-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1200px) {
+  .machine-item-row {
+    width: calc(50% - 20px);
+  }
+}
+
+@media (max-width: 768px) {
+  .machine-item-row {
+    width: 100%;
+  }
+}

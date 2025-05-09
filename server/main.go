@@ -29,6 +29,7 @@ type MachineManager struct {
 func NewMachineManager() *MachineManager {
 	return &MachineManager{
 		machines: make(map[uint32]*Machine),
+		nextID: 1,
 		stopChans: make(map[uint32]chan struct{}),
 		updateRate: 1000 * time.Millisecond,
 	}
@@ -60,7 +61,7 @@ func (mm *MachineManager) createMachine() *Machine {
 		Location: &pb.GPS{
 			Lat: 47.695185 + (0.0001 * (float64(mm.nextID%5) - 2)), // Start machine around Sammamish Valley, and nudge based on manipulation of ID
 			Lon: -122.145161 + (0.0001 * (float64(mm.nextID%5) - 2)),
-			Alt: float32(0 + mm.nextID%50), // Different starting altitudes from sea level
+			Alt: float32(10 + mm.nextID%50), // Different starting altitudes from sea level
 		},
 		IsPaused: true,
 		FuelLevel: 100.0, // Initially 100% FuelLevel
@@ -163,8 +164,21 @@ func (mm *MachineManager) UnPause(ctx context.Context, req *pb.Machine) (*pb.Mac
 func (mm *MachineManager) MachineStream(req *pb.MachineStreamRequest, stream pb.MachineMap_MachineStreamServer) error {
 	machine := mm.createMachine()
 
+	// Debugging: machineJSON after machine creation
+	// machineJSON, err := json.MarshalIndent(machine, "", "  ")
+	// if err != nil {
+	// 	log.Printf("Failed to marshal machine for logging: %v", err)
+	// } else {
+	// 	log.Printf("gRPC Server: after createMachine, before startMachineMovement:\n%s", machineJSON)
+	// }
+
 	// Start Brownian Motion of machine
 	mm.startMachineMovement(machine)
+	// Send initial state immediately to avoid race conditions
+	if err := stream.Send(mm.machineToProto(machine)); err != nil {
+		mm.removeMachine(machine.ID)
+		return err
+	}
 
 	// Stream updates until client (WebSocket) disconnects
 	for {
@@ -173,7 +187,13 @@ func (mm *MachineManager) MachineStream(req *pb.MachineStreamRequest, stream pb.
 			mm.removeMachine(machine.ID)
 			return nil
 		case <-time.After(mm.updateRate):
-			// Send current machine state as protobuf
+			// Debugging: machineJSON after machine creation
+			// machineJSON, err := json.MarshalIndent(machine, "", "  ")
+			// if err != nil {
+			// 	log.Printf("Failed to marshal machine for logging: %v", err)
+			// } else {
+			// 	log.Printf("gRPC Server: after createMachine, before startMachineMovement:\n%s", machineJSON)
+			// }
 			if err := stream.Send(mm.machineToProto(machine)); err != nil {
 				mm.removeMachine(machine.ID)
 				return err

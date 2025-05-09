@@ -73,6 +73,7 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 	go func() {
 		for {
 			machine, err := stream.Recv()
+			
 			if err != nil {
 				log.Printf("Stream ended: %v", err)
 				cancel()
@@ -82,6 +83,8 @@ func (s *ProxyServer) handleMachine(w http.ResponseWriter, r *http.Request){
 
 		// Convert to JSON and send to WebSocket
 		machineJSON, err := json.Marshal(machine)
+		// log.Printf("WS Proxy: sending response in handleMachine goroutine before websocket.TextMessage: \n%s",machineJSON)
+
 		if err != nil {
 			log.Printf("Failed to marshal machine: %v", err)
 			continue
@@ -131,6 +134,8 @@ for {
 
 	// Send confirmation back to client
 	responseJSON, _ := json.Marshal(response)
+	
+	// log.Printf("WS Proxy: sending response to incoming command in handleMachine before websocket.TextMessage: \n%s",responseJSON)
 	if err := conn.WriteMessage(websocket.TextMessage, responseJSON); err != nil {
 		log.Printf("failed to write response: %v", err)
 		cancel()
