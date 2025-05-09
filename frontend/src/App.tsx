@@ -1,9 +1,10 @@
 // App.tsx
 import React, { useEffect, useState } from 'react';
 import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
+import { getWebSocketURL, getMapsApiKey } from '../config'
 import './App.css';
 
-const mapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const mapsApiKey = getMapsApiKey()
 
 interface GPS {
   lat: number;
@@ -95,7 +96,7 @@ function App() {
 
   // Function to add a new machine by creating a new websocket connection
   const addMachine = () => {
-    const newSocket = new WebSocket('ws://localhost:3001/machine');
+    const newSocket = new WebSocket(getWebSocketURL());
 
     newSocket.onopen = () => {
       console.log(`New machine connection established.`);
