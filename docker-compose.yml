@@ -3,8 +3,8 @@ version: '3.8'
 services:
   grpc-server:
     build:
-      context: .
-      dockerfile: server/dockerfile
+      context: ./server
+      dockerfile: Dockerfile
     container_name: stream-machine-map-grpc-server
     ports:
       - "50051:50051"
@@ -13,10 +13,11 @@ services:
 
   ws-proxy:
     build:
-      context: .
-      dockerfile: server/ws-proxy/dockerfile
+      context: ./server
+      dockerfile: ws-proxy/Dockerfile
     container_name: stream-machine-map-ws-proxy
-    ports: "3001:3001"
+    ports:
+      - "3001:3001"
     depends_on:
       - grpc-server
     networks:
@@ -27,16 +28,16 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: dockerfile
+      dockerfile: Dockerfile
       args:
         - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
-      container_name: stream-machine-map-frontend
-      ports:
-        - "80:80"
-      depends_one:
-        - ws-prox
-      network:
-        - stream-machine-map-network
+    container_name: stream-machine-map-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - ws-proxy
+    networks:
+      - stream-machine-map-network
 
 networks:
   stream-machine-map-network:

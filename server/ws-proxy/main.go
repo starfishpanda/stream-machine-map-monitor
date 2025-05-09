@@ -30,13 +30,20 @@ type ProxyServer struct {
 }
 
 func NewProxyServer() (*ProxyServer, error){
-	conn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Get gRPC server address from environment variable or use default
+	grpcServerAddr := os.Getenv("GRPC_SERVER")
+	if grpcServerAddr == "" {
+			grpcServerAddr = "localhost:50051" // Default if not specified
+	}
+	
+	log.Printf("Connecting to gRPC server at %s", grpcServerAddr)
+	conn, err := grpc.NewClient(grpcServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
 	client := pb.NewMachineMapClient(conn)
-	return &ProxyServer{grpcClient: client},nil
+	return &ProxyServer{grpcClient: client, conn: conn},nil
 	
 }
 

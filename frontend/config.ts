@@ -1,9 +1,16 @@
 export const getWebSocketURL = () => {
   const isProduction = import.meta.env.MODE === 'production';
-  const host = isProduction ? window.location.hostname : 'localhost'
-  const port = isProduction ? (window.location.port || '80') : '3001'
-
-  return `ws://${host}:${port}/machine`;
+  
+  if (isProduction) {
+    // In production inside Docker, use the host name without specifying port
+    const url = `ws://${window.location.host}/ws/machine`;
+    console.log('Production WebSocket URL:', url);
+    return url;
+  } else {
+    // In development, connect directly to the WebSocket server
+    console.log('Development WebSocket URL: ws://localhost:3001/machine');
+    return 'ws://localhost:3001/machine';
+  }
 };
 
 export const getMapsApiKey = () => {

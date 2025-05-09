@@ -1,5 +1,9 @@
 .PHONY: build start stop restart logs clean help
 
+# Include environment variables from .env file
+-include .env
+export
+
 # Variables
 CONTAINER_PREFIX = stream-machine-map
 
@@ -19,18 +23,19 @@ help:
 # Build Docker images
 build:
 	@echo "Building Docker images..."
-	docker-compose build
+	@echo "Building Docker images with GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}"
+	docker compose build
 
 # Start containers
 start:
 	@echo "Starting containers..."
-	docker-compose up -d
+	docker compose up -d
 	@echo "Application is now running at http://localhost"
 
 # Stop containers
 stop:
 	@echo "Stopping containers..."
-	docker-compose down
+	docker compose down
 
 # Restart containers
 restart: stop start
@@ -38,10 +43,10 @@ restart: stop start
 # View logs
 logs:
 	@echo "Showing logs..."
-	docker-compose logs -f
+	docker compose logs -f
 
 # Clean up
 clean:
 	@echo "Cleaning up Docker resources..."
-	docker-compose down --rmi all --volumes --remove-orphans
+	docker compose down --rmi all --volumes --remove-orphans
 	@echo "Cleanup complete."
