@@ -71,7 +71,7 @@ function App() {
 
   // Function to pause/unpause a machine
   const togglePause = (machine: Machine) => {
-    console.log(`Socket Connections in togglePause for ${machine.id}`, socketConnections)
+    // console.log(`Socket Connections in togglePause for ${machine.id}`, socketConnections)
     const socket = socketConnections.get(machine.id)
 
     if (!socket || socket.readyState !== WebSocket.OPEN) {
@@ -104,7 +104,7 @@ function App() {
     
     newSocket.onmessage = (event) => {
       const newMachine = JSON.parse(event.data) as Machine;
-      console.log('New machine data received from gRPC Server to WebSocket Proxy:', newMachine);
+      // console.log('New machine data received from gRPC Server to WebSocket Proxy:', newMachine);
 
       // Update machines state
       setMachines((prev) => {

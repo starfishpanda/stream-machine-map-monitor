@@ -12,12 +12,6 @@ The application consists of three main components:
 
 ![Architecture Diagram](./assets/stream-machine-diagram-1.png)
 
-### Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-- Google Maps API Key
-
 ## Features
 
 - Real-time tracking of machine positions on Google Maps
@@ -37,15 +31,29 @@ The application consists of three main components:
 
 ![Demo](./assets/demo.gif)
 
-## Quick Start with Docker
+## Setup Options
 
-The easiest way to run this application is using Docker Compose:
+You have multiple options to set up and run this application:
 
-## Setup and Running Instructions
+### Prerequisites for All Options
+
+- **Google Maps API Key**: Required for the map functionality
+   - Acquire [Here](https://developers.google.com/maps/documentation/javascript/get-api-key)
+- **Docker and Docker Compose**: Required for containerized setups
+- **Go 1.22+**: Required for manual setup options
+- **Node.js 20+**: Required for manual frontend setup
+
+### Option 1: Quick Start with Docker (Recommended)
+
+This is the easiest way to run the application using Docker Compose:
 
 1. **Download and Extract the Repository**
    - Download the ZIP file from the GitHub repository
    - Extract it to a directory on your local machine
+      ```bash
+      unzip stream-machine-map-monitor-main.zip
+      cd stream-machine-map-monitor-main
+      ```
 
 2. **Configure Environment Variables**
    - Copy the example environment file to create your own:
@@ -59,63 +67,146 @@ The easiest way to run this application is using Docker Compose:
      (Note: Do not use quotes around the API key)
 
 3. **Build and Start the Application**
-   - Make sure you're in the project root directory
-   - Build the Docker containers:
+   - Make sure Docker Desktop is running
+   - If you have Make installed:
      ```bash
      make build
-     ```
-   - Start the application:
-     ```bash
      make start
+     ```
+   - Without Make:
+     ```bash
+     docker compose build
+     docker compose up -d
      ```
 
 4. **Access the Application**
-   - Open your browser and navigate to:
-     ```
-     http://localhost
-     ```
-   - You should see the map interface
-   - Click "Add Machine" to create and monitor machines
+   - Open your browser and navigate to `http://localhost`
 
-5. **Usage**
-   - Each machine will appear on the map with a colored marker, in the paused state
-   - Green markers indicate active machines, red markers indicate paused machines
-   - Click on a machine marker to view details and control options
-   - Use the dashboard to manage multiple machines
+### Option 2: Git Clone with Docker
 
-## Manual Setup
+If you prefer to use Git for versioning:
 
-If you prefer to run the components individually:
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/username/stream-machine-map-monitor.git
+   cd stream-machine-map-monitor
+   ```
 
-### gRPC Server
+2. **Configure Environment Variables**
+   ```bash
+   cp .env.example .env
+   # Edit .env to add your Google Maps API key
+   ```
 
-```bash
-cd server
-go run main.go
-```
+3. **Build and Start with Docker**
+   ```bash
+   make build
+   make start
+   # Or use docker compose commands directly
+   ```
 
-### WebSocket Proxy
+4. **Access the Application**
+   - Open your browser and navigate to `http://localhost`
 
-```bash
-cd server/ws-proxy
-go run main.go
-```
+### Option 3: Manual Setup (No Docker)
 
-### Frontend
+If you prefer to run the components individually without Docker:
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/username/stream-machine-map-monitor.git
+   cd stream-machine-map-monitor
+   ```
+
+2. **Set Up the gRPC Server**
+   ```bash
+   cd server
+   go mod download
+   go run main.go
+   # This will start the gRPC server on port 50051
+   ```
+
+3. **Set Up the WebSocket Proxy**
+   ```bash
+   cd server/ws-proxy
+   go mod download
+   go run main.go
+   # This will start the WebSocket proxy on port 3001
+   ```
+
+4. **Set Up the Frontend**
+   ```bash
+   cd frontend
+   
+   # Create a .env.local file with your Google Maps API key
+   echo "VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here" > .env.local
+   
+   # Install dependencies
+   npm install
+   
+   # Start the development server
+   npm run dev
+   # This will start the frontend on port 5173
+   ```
+
+5. **Access the Application**
+   - Open your browser and navigate to `http://localhost:5173`
+
+## Management Commands
+
+When using Docker with Make:
+
+- **View logs**:
+  ```bash
+  make logs
+  ```
+
+- **Restart the application**:
+  ```bash
+  make restart
+  ```
+
+- **Stop the application**:
+  ```bash
+  make stop
+  ```
+
+- **Clean up completely**:
+  ```bash
+  make clean
+  ```
+
+Without Make:
+- **View logs**:
+  ```bash
+  docker compose logs -f
+  ```
+
+- **Restart the application**:
+  ```bash
+  docker compose down
+  docker compose up -d
+  ```
+
+- **Stop the application**:
+  ```bash
+  docker compose down
+  ```
+
+- **Clean up completely**:
+  ```bash
+  docker compose down --rmi all --volumes --remove-orphans
+  ```
 
 ## Troubleshooting
 
 If you encounter any issues:
 
-- Ensure all ports (50051, 3001, and 80) are available
-- Check Docker logs with `docker-compose logs`
-- Verify your Google Maps API key has the necessary permissions
+- Ensure all required ports (50051, 3001, 80, or 5173 for dev mode) are available
+- Check Docker logs with `make logs` or `docker compose logs`
+- Verify your Google Maps API key has the JavaScript Maps API enabled
+- For WebSocket connection issues, check browser console for any errors
+- If running manually, ensure all services are running in the correct order (gRPC Server → WebSocket Proxy → Frontend)
 
 ## Project Structure
 

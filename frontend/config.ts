@@ -4,7 +4,7 @@ export const getWebSocketURL = () => {
   if (isProduction) {
     // In production inside Docker, use the host name without specifying port
     const url = `ws://${window.location.host}/ws/machine`;
-    console.log('Production WebSocket URL:', url);
+    // console.log('Production WebSocket URL:', url);
     return url;
   } else {
     // In development, connect directly to the WebSocket server
